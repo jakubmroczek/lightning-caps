@@ -4,7 +4,7 @@ import torch
 from pytorch_lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
-
+from .components.capsule_loss import CapsuleLoss
 
 class MNISTLitModule(LightningModule):
     """Example of LightningModule for MNIST classification.
@@ -36,7 +36,7 @@ class MNISTLitModule(LightningModule):
         self.net = net
 
         # loss function
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = CapsuleLoss()
 
         # metric objects for calculating and averaging accuracy across batches
         self.train_acc = Accuracy()
@@ -51,8 +51,8 @@ class MNISTLitModule(LightningModule):
         # for tracking best so far validation accuracy
         self.val_acc_best = MaxMetric()
 
-    def forward(self, x: torch.Tensor):
-        return self.net(x)
+    def forward(self, x: torch.Tensor, y=None):
+        return self.net(x,y)
 
     def on_train_start(self):
         # by default lightning executes validation step sanity checks before training starts,
@@ -61,10 +61,12 @@ class MNISTLitModule(LightningModule):
 
     def step(self, batch: Any):
         x, y = batch
-        logits = self.forward(x)
-        loss = self.criterion(logits, y)
-        preds = torch.argmax(logits, dim=1)
-        return loss, preds, y
+        # TODO: mroczkej - remove magic variables
+        labels = torch.eye(10).index_select(dim=0, index=y)
+        classes, reconstructions = self.forward(x, labels)
+        loss = self.criterion(x, labels, classes, reconstructions)
+        classes = torch.argmax(classes, dim=1)
+        return loss, classes, y
 
     def training_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
