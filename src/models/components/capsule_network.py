@@ -56,19 +56,22 @@ class CapsuleLayer(nn.Module):
 
 
 class CapsuleNet(nn.Module):
-    def __init__(self):
+    def __init__(
+        self, 
+        first_capsule_layer_dimension:int = 8,
+        first_capusle_layer_convolution_layer_numbers:int = 32,
+        output_capsules_dimension:int = 16
+    ):
         super(CapsuleNet, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=9, stride=1)
-        # num_capsules is a capsule dimension
-        # out_channels is capusle number
-        self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32,
+        self.primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
                                              kernel_size=9, stride=2)
-        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 6 * 6, in_channels=8,
-                                           out_channels=16)
+        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=first_capusle_layer_convolution_layer_numbers * 6 * 6, in_channels=first_capsule_layer_dimension,
+                                           out_channels=output_capsules_dimension)
 
         self.decoder = nn.Sequential(
-            nn.Linear(16 * NUM_CLASSES, 512),
+            nn.Linear(output_capsules_dimension * NUM_CLASSES, 512),
             nn.ReLU(inplace=True),
             nn.Linear(512, 1024),
             nn.ReLU(inplace=True),
