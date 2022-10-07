@@ -16,5 +16,5 @@ scheduler:
 net:
   _target_: src.models.components.capsule_network.CapsuleNet
   first_capsule_layer_dimension: 8
-  first_capusle_layer_convolution_layer_numbers: 32
+  first_capusle_layer_convolution_layer_numbers: 16
   output_capsules_dimension: 16
