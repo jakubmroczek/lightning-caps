@@ -6,6 +6,8 @@ from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 from .components.capsule_loss import CapsuleLoss
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 class MNISTLitModule(LightningModule):
     """Example of LightningModule for MNIST classification.
 
@@ -61,8 +63,9 @@ class MNISTLitModule(LightningModule):
 
     def step(self, batch: Any):
         x, y = batch
-        # TODO: mroczkej - remove magic variables
-        labels = torch.eye(10).index_select(dim=0, index=y)
+        # TODO: mroczekj - remove magic variables
+        # TODO: mroczekj - use device from trainer
+        labels = torch.eye(10).to(DEVICE).index_select(dim=0, index=y)
         classes, reconstructions = self.forward(x, labels)
         loss = self.criterion(x, labels, classes, reconstructions)
         classes = torch.argmax(classes, dim=1)
