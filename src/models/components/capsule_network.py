@@ -1,4 +1,5 @@
 
+from math import floor
 import torch
 from torch import nn
 from torch.autograd import Variable
@@ -60,14 +61,22 @@ class CapsuleNet(nn.Module):
         self, 
         first_capsule_layer_dimension:int = 8,
         first_capusle_layer_convolution_layer_numbers:int = 32,
-        output_capsules_dimension:int = 16
+        output_capsules_dimension:int = 16,
+        conv1_kernel_size: int = 9,
+        conv1_stride: int = 1,
+        primary_caps_kernel_size: int = 9,
+        primary_caps_stride: int = 2
     ):
         super(CapsuleNet, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=9, stride=1)
+        mnist_dimension = 28
+
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=conv1_kernel_size, stride=conv1_stride)
         self.primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
-                                             kernel_size=9, stride=2)
-        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=first_capusle_layer_convolution_layer_numbers * 6 * 6, in_channels=first_capsule_layer_dimension,
+                                             kernel_size=primary_caps_kernel_size, stride=primary_caps_stride)
+        conv1_feature_map_dimension = floor( (mnist_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
+        primary_caps_feature_map_dimension = floor( (conv1_feature_map_dimension - primary_caps_kernel_size + primary_caps_stride ) / primary_caps_stride )
+        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=first_capusle_layer_convolution_layer_numbers * primary_caps_feature_map_dimension * primary_caps_feature_map_dimension, in_channels=first_capsule_layer_dimension,
                                            out_channels=output_capsules_dimension)
 
         self.decoder = nn.Sequential(
