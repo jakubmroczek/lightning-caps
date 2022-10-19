@@ -5,7 +5,6 @@ from torch import nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
-NUM_CLASSES = 10
 NUM_ROUTING_ITERATIONS = 3
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -65,26 +64,29 @@ class CapsuleNet(nn.Module):
         conv1_kernel_size: int = 9,
         conv1_stride: int = 1,
         primary_caps_kernel_size: int = 9,
-        primary_caps_stride: int = 2
+        primary_caps_stride: int = 2,
+        # 28 is for MNIST, 48 is for FER2013
+        input_image_dimension: int = 28,
+        classes_number: int = 10
     ):
         super(CapsuleNet, self).__init__()
-
-        mnist_dimension = 28
+    
+        self.classes_number = classes_number
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=conv1_kernel_size, stride=conv1_stride)
         self.primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
                                              kernel_size=primary_caps_kernel_size, stride=primary_caps_stride)
-        conv1_feature_map_dimension = floor( (mnist_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
+        conv1_feature_map_dimension = floor( (input_image_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
         primary_caps_feature_map_dimension = floor( (conv1_feature_map_dimension - primary_caps_kernel_size + primary_caps_stride ) / primary_caps_stride )
-        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=first_capusle_layer_convolution_layer_numbers * primary_caps_feature_map_dimension * primary_caps_feature_map_dimension, in_channels=first_capsule_layer_dimension,
+        self.digit_capsules = CapsuleLayer(num_capsules=self.classes_number, num_route_nodes=first_capusle_layer_convolution_layer_numbers * primary_caps_feature_map_dimension * primary_caps_feature_map_dimension, in_channels=first_capsule_layer_dimension,
                                            out_channels=output_capsules_dimension)
 
         self.decoder = nn.Sequential(
-            nn.Linear(output_capsules_dimension * NUM_CLASSES, 512),
+            nn.Linear(output_capsules_dimension * self.classes_number, 512),
             nn.ReLU(inplace=True),
             nn.Linear(512, 1024),
             nn.ReLU(inplace=True),
-            nn.Linear(1024, 784),
+            nn.Linear(1024, input_image_dimension * input_image_dimension),
             nn.Sigmoid()
         )
 
@@ -99,7 +101,7 @@ class CapsuleNet(nn.Module):
         if y is None:
             # In all batches, get the most active capsule.
             _, max_length_indices = classes.max(dim=1)
-            y = Variable(torch.eye(NUM_CLASSES)).to(DEVICE).index_select(dim=0, index=max_length_indices.data)
+            y = Variable(torch.eye(self.classes_number)).to(DEVICE).index_select(dim=0, index=max_length_indices.data)
 
         reconstructions = self.decoder((x * y[:, :, None]).reshape(x.size(0), -1))
 

@@ -1,4 +1,4 @@
-_target_: src.models.mnist_module.MNISTLitModule
+_target_: src.models.fer2013_module.FER2013LitModule
 
 optimizer:
   _target_: torch.optim.Adam
@@ -16,11 +16,11 @@ scheduler:
 net:
   _target_: src.models.components.capsule_network.CapsuleNet
   first_capsule_layer_dimension: 8
-  first_capusle_layer_convolution_layer_numbers: 32
+  first_capusle_layer_convolution_layer_numbers: 1
   output_capsules_dimension: 16
   conv1_kernel_size: 9
   conv1_stride: 1
   primary_caps_kernel_size: 9
   primary_caps_stride: 2
-  input_image_dimension: 28
-  classes_number: 10
+  input_image_dimension: 48
+  classes_number: 7

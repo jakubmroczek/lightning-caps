@@ -1,11 +1,12 @@
-from locale import normalize
+from importlib.util import find_spec
 from random import randint
-from models.mnist_module import MNISTLitModule
+from models.fer2013_module import FER2013LitModule
 from models.components.capsule_network import CapsuleNet
 
 import torch
+from torch.autograd import Variable
 from torchvision.transforms import transforms
-from torchvision.datasets import MNIST
+from torchvision.datasets import FER2013
 from torchvision.utils import save_image
 import torch.nn.functional as F
 
@@ -15,34 +16,34 @@ from PyQt5.QtGui import QPixmap, QDoubleValidator
 from PyQt5.QtCore import QRect
 import sys, tempfile
 
-def get_mnist_test_images():
+def get_fer2013_dataset():
     # data transformations as in learning module
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
-    data_dir = 'data'
-    testset = MNIST(data_dir, train=False, transform=transform)
-
+    data_dir = 'data/'
+    testset = FER2013(data_dir, split='train', transform=transform)
     return testset
 
 def load_capsule_net_from_checkpoint():
     from hydra import compose, initialize
     
-    initialize(config_path="../assets/mnist/.hydra", job_name="capsule_net_decoder")
+    initialize(config_path="../assets/fer2013/.hydra", job_name="capsule_net_decoder")
     cfg = compose(config_name="config")
     net_configuration = cfg.model.net
-    
-    first_capsule_layer_dimension = net_configuration.first_capsule_layer_dimension
-    first_capusle_layer_convolution_layer_numbers = net_configuration.first_capusle_layer_convolution_layer_numbers
-    output_capsules_dimension = net_configuration.output_capsules_dimension
-    # conv1_kernel_size = net_configuration.conv1_kernel_size
-    conv1_kernel_size = 9
-    # conv1_stride = net_configuration.conv1_stride
-    conv1_stride = 1
-    # primary_caps_kernel_size = net_configuration.primary_caps_kernel_size
-    primary_caps_kernel_size = 9
-    # primary_caps_stride = net_configuration.primary_caps_stride
-    primary_caps_stride = 2
+
+    # first_capsule_layer_dimension = net_configuration.first_capsule_layer_dimension
+
+    first_capsule_layer_dimension =  8
+    first_capusle_layer_convolution_layer_numbers =  1
+    output_capsules_dimension =  16
+    conv1_kernel_size =  9
+    conv1_stride =  1
+    primary_caps_kernel_size =  9
+    primary_caps_stride =  2
+    input_image_dimension =  48
+    classes_number =  7
+
 
     net=CapsuleNet(
         first_capsule_layer_dimension,
@@ -51,11 +52,14 @@ def load_capsule_net_from_checkpoint():
         conv1_kernel_size,
         conv1_stride,
         primary_caps_kernel_size,
-        primary_caps_stride
+        primary_caps_stride,
+        input_image_dimension,
+        classes_number
     )
 
-    checkpoint_path = 'assets/mnist/checkpoints/epoch_007.ckpt'
-    model = MNISTLitModule.load_from_checkpoint(checkpoint_path, net=net)
+    checkpoint_path = 'assets/fer2013/checkpoints/epoch_017.ckpt'
+
+    model = FER2013LitModule.load_from_checkpoint(checkpoint_path, net=net)
 
     return model
 
@@ -78,13 +82,13 @@ class App(QWidget):
         self.model.eval()
 
         # Test dataset
-        self.dataset = get_mnist_test_images()
+        self.dataset = get_fer2013_dataset()
     
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
     
-        path = 'assets/mnist/reconstuction.jpg'
+        path = 'assets/fer2013/reconstuction.jpg'
 
         # Original image
         self.originalImage = QLabel(self)
@@ -138,7 +142,7 @@ class App(QWidget):
         self.show()    
 
     def displayImages(self):
-        sample_idx = randint(0,10000)
+        sample_idx = randint(0, 3_000)
         original_image, current_y = self.dataset[sample_idx]
         
         self.current_y = current_y
@@ -176,13 +180,15 @@ class App(QWidget):
     def displayDecodedImageFromCustomCapsuleWeights(self):
         torch.set_printoptions(precision=10)
 
+        class_number = 7
+
         new_capsule = [float(label.text()) for label in self.weight_labels]
         new_capsule = torch.FloatTensor(new_capsule)
-        net_input = torch.zeros(10, self.digit_caps_dimension)
+        net_input = torch.zeros(class_number, self.digit_caps_dimension)
         net_input[self.recognized_digit] = new_capsule
         net_input = net_input.unsqueeze(dim=0)
 
-        labels = torch.eye(10).index_select(dim=0, index=torch.tensor([self.recognized_digit]))
+        labels = torch.eye(class_number).index_select(dim=0, index=torch.tensor([self.recognized_digit]))
         
         y = labels
 
@@ -190,7 +196,8 @@ class App(QWidget):
         reconstructions = self.model.net.decoder((x * y[:, :, None]).reshape(x.size(0), -1))
         print(reconstructions)
 
-        reconstructions = reconstructions.view(1, 28, 28) 
+        image_size = 48
+        reconstructions = reconstructions.view(1, image_size, image_size) 
 
         first_image = reconstructions[0]
 
@@ -203,9 +210,10 @@ class App(QWidget):
         self.displayCapsuleWeights(self.recognized_capsule)
 
     def forward(self, image):
+        image_size = 48
         dummy_batch_size = 2
         # Wrap in pseudo-batch
-        dummy_image  = torch.zeros(1,28,28)
+        dummy_image  = torch.zeros(1,image_size,image_size)
         pseudo_batch = torch.cat((image, dummy_image), dim=0).unsqueeze(dim=1)
         capsules, reconstructions = self.model(pseudo_batch)
 
@@ -214,9 +222,8 @@ class App(QWidget):
         x = self.model.net.primary_capsules(x)
         digit_caps = self.model.net.digit_capsules(x).squeeze().transpose(0, 1)
 
-        reconstructions = reconstructions.view(dummy_batch_size, 28, 28) 
-        return capsules, reconstructions, digit_caps            
-
+        reconstructions = reconstructions.view(dummy_batch_size, image_size, image_size) 
+        return capsules, reconstructions, digit_caps
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
