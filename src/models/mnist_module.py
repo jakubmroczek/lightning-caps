@@ -4,7 +4,6 @@ import torch
 from pytorch_lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
-from .components.capsule_loss import CapsuleLoss
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -28,6 +27,7 @@ class MNISTLitModule(LightningModule):
         net: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
+        criterion: torch.nn.Module
     ):
         super().__init__()
 
@@ -37,8 +37,8 @@ class MNISTLitModule(LightningModule):
 
         self.net = net
 
-        # loss function
-        self.criterion = CapsuleLoss()
+        # Loss function
+        self.criterion = criterion
 
         # metric objects for calculating and averaging accuracy across batches
         self.train_acc = Accuracy()
@@ -148,5 +148,5 @@ if __name__ == "__main__":
     import pyrootutils
 
     root = pyrootutils.setup_root(__file__, pythonpath=True)
-    cfg = omegaconf.OmegaConf.load(root / "configs" / "model" / "mnist.yaml")
+    cfg = omegaconf.OmegaConf.load(root / "configs" / "model" / "mnist_reconstruction.yaml")
     _ = hydra.utils.instantiate(cfg)

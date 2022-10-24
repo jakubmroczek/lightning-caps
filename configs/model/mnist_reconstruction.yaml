@@ -1,0 +1,30 @@
+_target_: src.models.mnist_module.MNISTLitModule
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.001
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.1
+  patience: 10
+
+criterion:
+  _target_: src.models.components.capsule_reconstruction_loss.ReconstructionLoss
+  epsilon: 0.0005
+  
+net:
+  _target_: src.models.components.capsule_network.CapsuleNet
+  first_capsule_layer_dimension: 8
+  first_capusle_layer_convolution_layer_numbers: 1
+  output_capsules_dimension: 16
+  conv1_kernel_size: 9
+  conv1_stride: 1
+  primary_caps_kernel_size: 9
+  primary_caps_stride: 2
+  input_image_dimension: 28
+  classes_number: 10

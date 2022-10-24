@@ -5,7 +5,7 @@
 defaults:
   - _self_
   - datamodule: mnist.yaml
-  - model: mnist.yaml
+  - model: mnist_reconstruction.yaml
   - callbacks: default.yaml
   - logger: tensorboard.yaml
   - trainer: default.yaml
