@@ -24,7 +24,7 @@ net:
   output_capsules_dimension: 16
   conv1_kernel_size: 9
   conv1_stride: 1
-  primary_caps_kernel_size: 9
-  primary_caps_stride: 2
+  primary_caps_kernel_size: 2
+  primary_caps_stride: 1
   input_image_dimension: 28
   classes_number: 10
