@@ -5,6 +5,8 @@ from pytorch_lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 
+from .components.capsule_loss import CapsuleLoss
+
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class MNISTLitModule(LightningModule):
@@ -27,7 +29,7 @@ class MNISTLitModule(LightningModule):
         net: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
-        criterion: torch.nn.Module
+        criterion: torch.nn.Module = CapsuleLoss()
     ):
         super().__init__()
 

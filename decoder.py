@@ -1,7 +1,7 @@
 from locale import normalize
 from random import randint
-from models.mnist_module import MNISTLitModule
-from models.components.capsule_network import CapsuleNet
+from src.models.mnist_module import MNISTLitModule
+from src.models.components.capsule_network import CapsuleNet
 
 import torch
 from torchvision.transforms import transforms
@@ -11,16 +11,13 @@ import torch.nn.functional as F
 
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QLineEdit
-from PyQt5.QtGui import QPixmap, QDoubleValidator
+from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 from PyQt5.QtCore import QRect
 import sys, tempfile
 
-from src import * 
-
-
 # CONFIG_PATH = "../assets/mnist/.hydra"
 # CONFIG_PATH = "../assets/4-kernel-2-stride-2"
-CONFIG_PATH = "../assets/experiment-4-default-hinton/.hydra"
+CONFIG_PATH = "./assets/experiment-4-default-hinton/.hydra"
 # CHECKPOINT_PATH = 'assets/mnist/checkpoints/epoch_007.ckpt'
 CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/experiment-4-default-hinton/checkpoints/epoch_005.ckpt'
 # CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/4-kernel-2-stride-2/epoch_008.ckpt'
@@ -135,10 +132,35 @@ class App(QWidget):
         self.resetWeights.setGeometry(QRect(250, 250, 170, 28))
         self.resetWeights.setText("Reset weights")
 
+        # Labels
         self.trueDigit = QLabel(self)
         self.trueDigit.setGeometry(QRect(250, 300, 170, 28))
         self.predicted = QLabel(self)
         self.predicted.setGeometry(QRect(250, 350, 170, 28))
+
+        # Epsilon
+        self.weight_delta = 1e-1
+        self.weight_delta_text_field = QLabel(self)
+        self.weight_delta_text_field.setText('Weight delta')
+        self.weight_delta_text_field.setGeometry(QRect(300, 350, 170, 28))
+
+        self.weight_delta_text_field = QLineEdit(self)
+        self.weight_delta_text_field.setValidator(QDoubleValidator(-99.99,99.99,20))
+        self.weight_delta_text_field.setMaximumWidth(100)
+        self.weight_delta_text_field.setText(f'{self.weight_delta}')
+        self.weight_delta_text_field.setGeometry(QRect(300, 380, 170, 28))
+
+        # Modified weight index
+        self.weight_index = QLabel(self)
+        self.weight_index.setText('Modified weight index')
+        self.weight_index.setGeometry(QRect(300, 450, 170, 28))
+
+        self.weight_index = 0
+        self.weight_index_le = QLineEdit(self)
+        self.weight_index_le.setValidator(QIntValidator(0,16))
+        self.weight_index_le.setMaximumWidth(100)
+        self.weight_index_le.setText(f'{self.weight_index}')
+        self.weight_index_le.setGeometry(QRect(300, 480, 170, 28))
 
         # Signals and slots
         self.pushButton.clicked.connect(self.displayImages)
@@ -147,8 +169,31 @@ class App(QWidget):
 
         self.show()    
 
+
+    # Handle weight updates
+    def wheelEvent(self, event):
+        # numDegrees = event.pixelDelta() / 8
+        # numSteps = numDegrees / 15
+
+        delta = event.pixelDelta().y()
+        step = float(self.weight_delta_text_field.text())
+        delta *= step
+
+        weight_index = int(self.weight_index_le.text())
+        new = float(self.weight_labels[weight_index].text()) + delta
+        new = str(new)
+        self.weight_labels[weight_index].setText(new)
+
+        self.displayDecodedImageFromCustomCapsuleWeights()
+        # if event->orientation() == Qt.Horizontal:
+        #     scrollHorizontally(numSteps)
+        # else:
+        #     scrollVertically(numSteps)
+        event.accept()
+
+
     def displayImages(self):
-        sample_idx = randint(0,10000)
+        sample_idx = randint(0,10_000)
         original_image, current_y = self.dataset[sample_idx]
         
         self.current_y = current_y

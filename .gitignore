@@ -150,4 +150,4 @@ data/
 logs/
 .env
 .autoenv
-assets/
+assets
