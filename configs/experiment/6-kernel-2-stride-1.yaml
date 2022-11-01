@@ -1,0 +1,22 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /model: 6_experiment_model.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["mnist", "6-kernel-2-stride-1"]
+
+model:
+  criterion:
+    _target_: src.models.components.capsule_loss.CapsuleLoss
+
+  net:
+    conv1_kernel_size: 2
+    conv1_stride: 1
+    
+  
