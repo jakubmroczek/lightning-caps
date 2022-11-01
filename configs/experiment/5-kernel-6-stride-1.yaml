@@ -1,0 +1,19 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /model: mnist_reconstruction.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["mnist", "5-kernel-6-stride-1"]
+
+model:
+  net:
+    conv1_kernel_size: 6
+    conv1_stride: 1
+    
+  
