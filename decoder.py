@@ -15,12 +15,11 @@ from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 from PyQt5.QtCore import QRect
 import sys, tempfile
 
-# CONFIG_PATH = "../assets/mnist/.hydra"
-# CONFIG_PATH = "../assets/4-kernel-2-stride-2"
 CONFIG_PATH = "./assets/experiment-4-default-hinton/.hydra"
-# CHECKPOINT_PATH = 'assets/mnist/checkpoints/epoch_007.ckpt'
 CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/experiment-4-default-hinton/checkpoints/epoch_005.ckpt'
-# CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/4-kernel-2-stride-2/epoch_008.ckpt'
+
+# CONFIG_PATH = "./assets/4-kernel-2-stride-1"
+# CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/4-kernel-2-stride-1/epoch_001.ckpt'
 
 def get_mnist_test_images():
     # data transformations as in learning module
@@ -43,14 +42,14 @@ def load_capsule_net_from_checkpoint():
     # first_capsule_layer_dimension = 1
     first_capusle_layer_convolution_layer_numbers = net_configuration.first_capusle_layer_convolution_layer_numbers
     output_capsules_dimension = net_configuration.output_capsules_dimension
-    # conv1_kernel_size = net_configuration.conv1_kernel_size
-    conv1_kernel_size = 9
-    # conv1_stride = net_configuration.conv1_stride
-    conv1_stride = 1
-    # primary_caps_kernel_size = net_configuration.primary_caps_kernel_size
-    primary_caps_kernel_size = 9
-    # primary_caps_stride = net_configuration.primary_caps_stride
-    primary_caps_stride = 2
+    conv1_kernel_size = net_configuration.conv1_kernel_size
+    # conv1_kernel_size = 9
+    conv1_stride = net_configuration.conv1_stride
+    # conv1_stride = 1
+    primary_caps_kernel_size = net_configuration.primary_caps_kernel_size
+    # primary_caps_kernel_size = 9
+    primary_caps_stride = net_configuration.primary_caps_stride
+    # primary_caps_stride = 2
 
     net=CapsuleNet(
         first_capsule_layer_dimension,
