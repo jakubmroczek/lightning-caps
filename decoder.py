@@ -136,19 +136,19 @@ class App(QWidget):
         self.trueDigit = QLabel(self)
         self.trueDigit.setGeometry(QRect(250, 300, 170, 28))
         self.predicted = QLabel(self)
-        self.predicted.setGeometry(QRect(250, 350, 170, 28))
+        self.predicted.setGeometry(QRect(250, 330, 170, 28))
 
         # Epsilon
-        self.weight_delta = 1e-1
+        self.weight_delta = 1e-2
         self.weight_delta_text_field = QLabel(self)
         self.weight_delta_text_field.setText('Weight delta')
-        self.weight_delta_text_field.setGeometry(QRect(300, 350, 170, 28))
+        self.weight_delta_text_field.setGeometry(QRect(300, 370, 170, 28))
 
         self.weight_delta_text_field = QLineEdit(self)
         self.weight_delta_text_field.setValidator(QDoubleValidator(-99.99,99.99,20))
         self.weight_delta_text_field.setMaximumWidth(100)
         self.weight_delta_text_field.setText(f'{self.weight_delta}')
-        self.weight_delta_text_field.setGeometry(QRect(300, 380, 170, 28))
+        self.weight_delta_text_field.setGeometry(QRect(300, 400, 170, 28))
 
         # Modified weight index
         self.weight_index = QLabel(self)
