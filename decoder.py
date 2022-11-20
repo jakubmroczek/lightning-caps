@@ -2,6 +2,7 @@ from locale import normalize
 from random import randint
 from src.models.mnist_module import MNISTLitModule
 from src.models.components.capsule_network import CapsuleNet
+from src.models.components.capsule_network_no_conv1 import CapsuleNetNoConv1
 
 import torch
 from torchvision.transforms import transforms
@@ -15,8 +16,8 @@ from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 from PyQt5.QtCore import QRect
 import sys, tempfile
 
-CONFIG_PATH = "./assets/experiment-4-default-hinton/.hydra"
-CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/experiment-4-default-hinton/checkpoints/epoch_005.ckpt'
+CONFIG_PATH = "./assets/1-default-hinton/"
+CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/1-default-hinton/epoch_000.ckpt'
 
 # CONFIG_PATH = "./assets/4-kernel-2-stride-1"
 # CHECKPOINT_PATH = '/Users/mroczekj/Desktop/magisterka/code/lightning-hydra-template/assets/4-kernel-2-stride-1/epoch_001.ckpt'
@@ -51,7 +52,17 @@ def load_capsule_net_from_checkpoint():
     primary_caps_stride = net_configuration.primary_caps_stride
     # primary_caps_stride = 2
 
-    net=CapsuleNet(
+    # net=CapsuleNet(
+    #     first_capsule_layer_dimension,
+    #     first_capusle_layer_convolution_layer_numbers,
+    #     output_capsules_dimension,
+    #     conv1_kernel_size,
+    #     conv1_stride,
+    #     primary_caps_kernel_size,
+    #     primary_caps_stride
+    # )
+
+    net=CapsuleNetNoConv1(
         first_capsule_layer_dimension,
         first_capusle_layer_convolution_layer_numbers,
         output_capsules_dimension,
@@ -60,7 +71,7 @@ def load_capsule_net_from_checkpoint():
         primary_caps_kernel_size,
         primary_caps_stride
     )
-
+    
     model = MNISTLitModule.load_from_checkpoint(CHECKPOINT_PATH, net=net)
 
     return model
@@ -190,9 +201,41 @@ class App(QWidget):
         #     scrollVertically(numSteps)
         event.accept()
 
+    def genarate_comparisons(self, idx):
+        imgs = [self.reconstruct_image(i) for i in idx ]
+        self.save_reconstructed_images(idx)
+        self.save_benchmark_images(imgs)
+
+    def reconstruct_image(self, idx):
+        original_image, y = self.dataset[idx]
+        capsules, reconstructions, digit_caps = self.forward(original_image)
+        return reconstructions[0]
+
+    def save_reconstructed_images(self, idx):
+        i = 0
+        for img_id in idx:
+            path = f'/Users/mroczekj/Desktop/caps/original_{i}.jpeg'
+            img, y = self.dataset[img_id]
+            with open(path, 'w') as file:
+                save_image(img, file.name, format='JPEG', normalize=True)    
+            i += 1
+
+    def save_benchmark_images(self, imgs):
+        i = 0
+        for img in imgs:
+            path = f'/Users/mroczekj/Desktop/caps/reconstructed_{i}.jpeg'
+            with open(path, 'w') as file:
+                save_image(img, file.name, format='JPEG', normalize=True)    
+            i += 1
 
     def displayImages(self):
+        kIdx = [1892,3124,4636,1661,3029,1334,4388,2710,718,4692]
+        self.genarate_comparisons(kIdx)
+
         sample_idx = randint(0,10_000)
+
+        print(sample_idx)
+
         original_image, current_y = self.dataset[sample_idx]
         
         self.current_y = current_y
@@ -264,7 +307,8 @@ class App(QWidget):
         capsules, reconstructions = self.model(pseudo_batch)
 
         # Directly copied from the capusle network source code
-        x = F.relu(self.model.net.conv1(pseudo_batch), inplace=True)
+        # x = F.relu(self.model.net.conv1(pseudo_batch), inplace=True)
+        x = pseudo_batch
         x = self.model.net.primary_capsules(x)
         digit_caps = self.model.net.digit_capsules(x).squeeze().transpose(0, 1)
 
