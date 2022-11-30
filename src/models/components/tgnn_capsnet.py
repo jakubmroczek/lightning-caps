@@ -13,8 +13,18 @@ def softmax(input, dim=1):
     softmaxed_output = F.softmax(transposed_input.contiguous().view(-1, transposed_input.size(-1)), dim=-1)
     return softmaxed_output.view(*transposed_input.size()).transpose(dim, len(input.size()) - 1)
 
-class GnnCapsuleLayer():
-    pass
+class GnnCapsuleLayer(nn.Module):
+    def forward(x):
+        in_channels = 256
+
+        # Oblicz kapsulki za pomoca domyslnego algorytmu
+
+        # Zrób graf z kazdej warstwy kapsulkowej
+
+        # GNN
+
+        # Z powrotem do macierzy
+        return x
 
 class CapsuleLayer(nn.Module):
     def __init__(self, num_capsules, num_route_nodes, in_channels, out_channels, kernel_size=None, stride=None,
@@ -78,7 +88,7 @@ class TgnnCapNet(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=conv1_kernel_size, stride=conv1_stride)
 
-        self.tgnn_caps_layer = GnnCapsuleLayer()
+        self.tgnn_caps = GnnCapsuleLayer()
         # self.primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
                                             #  kernel_size=primary_caps_kernel_size, stride=primary_caps_stride)
         conv1_feature_map_dimension = floor( (input_image_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
@@ -97,7 +107,7 @@ class TgnnCapNet(nn.Module):
 
     def forward(self, x, y=None):
         x = F.relu(self.conv1(x), inplace=True)
-        x = self.primary_capsules(x)
+        x = self.tgnn_caps(x)
         x = self.digit_capsules(x).squeeze().transpose(0, 1)
 
         classes = (x ** 2).sum(dim=-1) ** 0.5

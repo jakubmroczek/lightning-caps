@@ -1,4 +1,3 @@
 defaults:
   - override /datamodule: tgnn_mnist.yaml
   - override /model: mnist_tgnn.yaml
-  
