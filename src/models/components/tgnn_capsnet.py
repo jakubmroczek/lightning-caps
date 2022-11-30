@@ -13,11 +13,57 @@ def softmax(input, dim=1):
     softmaxed_output = F.softmax(transposed_input.contiguous().view(-1, transposed_input.size(-1)), dim=-1)
     return softmaxed_output.view(*transposed_input.size()).transpose(dim, len(input.size()) - 1)
 
-class GnnCapsuleLayer(nn.Module):
-    def forward(x):
-        in_channels = 256
+class CapsuleLayer(nn.Module):
+    def __init__(self, num_capsules, num_route_nodes, in_channels, out_channels, kernel_size=None, stride=None,
+                 num_iterations=NUM_ROUTING_ITERATIONS):
+        super(CapsuleLayer, self).__init__()
 
+        self.num_route_nodes = num_route_nodes
+        self.num_iterations = num_iterations
+
+        self.num_capsules = num_capsules
+
+        if num_route_nodes != -1:
+            self.route_weights = nn.Parameter(torch.randn(num_capsules, num_route_nodes, in_channels, out_channels))
+        else:
+            self.capsules = nn.ModuleList(
+                [nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=0) for _ in
+                 range(num_capsules)])
+
+    def squash(self, tensor, dim=-1):
+        squared_norm = (tensor ** 2).sum(dim=dim, keepdim=True)
+        scale = squared_norm / (1 + squared_norm)
+        return scale * tensor / torch.sqrt(squared_norm)
+
+    def forward(self, x):
+        if self.num_route_nodes != -1:
+            priors = x[None, :, :, None, :] @ self.route_weights[:, None, :, :, :]
+
+            logits = Variable(torch.zeros(*priors.size())).to(DEVICE)
+            for i in range(self.num_iterations):
+                probs = softmax(logits, dim=2)
+                outputs = self.squash((probs * priors).sum(dim=2, keepdim=True))
+
+                if i != self.num_iterations - 1:
+                    delta_logits = (priors * outputs).sum(dim=-1, keepdim=True)
+                    logits = logits + delta_logits
+        else:
+            outputs = [capsule(x).view(x.size(0), -1, 1) for capsule in self.capsules]
+            outputs = torch.cat(outputs, dim=-1)
+            outputs = self.squash(outputs)
+
+        return outputs
+
+class GnnCapsuleLayer(nn.Module):
+
+    def __init__(self, num_capsules, num_route_nodes, in_channels, out_channels, kernel_size=None, stride=None, num_iterations=NUM_ROUTING_ITERATIONS):
+        super(GnnCapsuleLayer, self).__init__()
+
+        self.capsule_layer = CapsuleLayer(num_capsules, num_route_nodes, in_channels, out_channels, kernel_size, stride, num_iterations)
+
+    def forward(self, x):
         # Oblicz kapsulki za pomoca domyslnego algorytmu
+        x = self.capsule_layer(x)
 
         # Zrób graf z kazdej warstwy kapsulkowej
 
@@ -88,9 +134,7 @@ class TgnnCapNet(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=conv1_kernel_size, stride=conv1_stride)
 
-        self.tgnn_caps = GnnCapsuleLayer()
-        # self.primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
-                                            #  kernel_size=primary_caps_kernel_size, stride=primary_caps_stride)
+        self.tgnn_caps = GnnCapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers, kernel_size=primary_caps_kernel_size, stride=primary_caps_kernel_size)                                            
         conv1_feature_map_dimension = floor( (input_image_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
         primary_caps_feature_map_dimension = floor( (conv1_feature_map_dimension - primary_caps_kernel_size + primary_caps_stride ) / primary_caps_stride )
         self.digit_capsules = CapsuleLayer(num_capsules=self.classes_number, num_route_nodes=first_capusle_layer_convolution_layer_numbers * primary_caps_feature_map_dimension * primary_caps_feature_map_dimension, in_channels=first_capsule_layer_dimension,
