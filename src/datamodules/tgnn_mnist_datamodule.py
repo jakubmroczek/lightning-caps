@@ -2,12 +2,9 @@ from typing import Any, Dict, Optional, Tuple
 
 import torch
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import ConcatDataset, Dataset, random_split
-from torch_geometric.loader import DataLoader
+from torch.utils.data import ConcatDataset, Dataset, random_split, DataLoader
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
-from torch_geometric.transforms import ToSLIC, KNNGraph
-
 
 class TGnnMNISTDataModule(LightningDataModule):
     """Example of LightningDataModule for MNIST dataset.
@@ -53,7 +50,7 @@ class TGnnMNISTDataModule(LightningDataModule):
 
         # data transformations
         self.transforms = transforms.Compose(
-            [transforms.ToTensor(), ToSLIC(), KNNGraph()]
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
         )
 
         self.data_train: Optional[Dataset] = None
