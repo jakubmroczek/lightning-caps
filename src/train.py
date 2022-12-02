@@ -23,7 +23,7 @@ root = pyrootutils.setup_root(
 #   any place without installing project as a package
 # - sets PROJECT_ROOT environment variable which is used in "configs/paths/default.yaml"
 #   to make all paths always relative to the project root
-# - loads environment variables from ".env" file in root dir (if `dotenv=True`)
+# - loads environment variables from ".env" file in root dir (if `doptenv=True`)
 #
 # you can remove `pyrootutils.setup_root(...)` if you:
 # 1. either install project as a package or move each entry file to the project root dir

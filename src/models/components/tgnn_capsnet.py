@@ -58,24 +58,31 @@ class CapsuleLayer(nn.Module):
 
 class GnnCapsuleLayer(nn.Module):
  
-    def __init__(self, capsule_layer):
+    def __init__(self):
         super(GnnCapsuleLayer, self).__init__()
-        self.capsule_layer = capsule_layer
-        self.gnn = SAGEConv(in_channels=-1, out_channels=8)
-        self.gnn = None
-
+        self.gnn = SAGEConv(in_channels=8, out_channels=8)
+        
     def forward(self, x):
-        # Oblicz kapsulki za pomoca domyslnego algorytmu
-        x = self.capsule_layer(x)
+        # x to kapsulki z warstwy primary caps
 
         # Zrób graf z kazdej warstwy kapsulkowej
-    
+        # Problemy techniczne:
+        #   - jak pogodzic wymiary batcha z foramted edge_index
+        #   - Wsparcie dla kilku warstw splotowych kapsułek, obecnie jest tylko 1
+        #   - sprawdz czy gnn sie uczy (czy jest backpropagation)
+        
+        # Kolejne kroki:
+        # - zrob macierz sasiedztwa kazdy z kazdym (zalozenie ze batch jest taki sam)
+        # - zrob macierz sasiedztwa tylko dla sasiadow
+        # - upewnij sie ze to dobrze dziala z batchem
+        # - wsparcie dla wiekszej ilosci warstw kapsulkowych
+        # - eksperymetny na grid ai
+        
+        edge_index = torch.randint(0, 31, (2,10))
+
         # GNN
-        # x = self.gnn(x)
+        x = self.gnn(x,edge_index)
 
-        # Z powrotem do macierzy
-
-        # TODO: Problem pamietaj, ze musi byc backpropagation bledu do tylu
         return x
 
 
@@ -99,10 +106,10 @@ class TgnnCapsNet(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=conv1_kernel_size, stride=conv1_stride)
         
-        primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
+        self.primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
                                              kernel_size=primary_caps_kernel_size, stride=primary_caps_stride)
         
-        self.gnn_capsule_layer = GnnCapsuleLayer(primary_capsules)
+        self.gnn_capsule_layer = GnnCapsuleLayer()
 
         conv1_feature_map_dimension = floor( (input_image_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
         primary_caps_feature_map_dimension = floor( (conv1_feature_map_dimension - primary_caps_kernel_size + primary_caps_stride ) / primary_caps_stride )
@@ -120,8 +127,12 @@ class TgnnCapsNet(nn.Module):
 
     def forward(self, x, y=None):
         x = F.relu(self.conv1(x), inplace=True)
+        
+        x = self.primary_capsules(x)
+        
         # gnn 
         x = self.gnn_capsule_layer(x)
+
         x = self.digit_capsules(x).squeeze().transpose(0, 1)
 
         classes = (x ** 2).sum(dim=-1) ** 0.5
