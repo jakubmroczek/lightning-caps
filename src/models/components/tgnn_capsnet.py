@@ -56,10 +56,10 @@ class CapsuleLayer(nn.Module):
 
         return outputs
 
-def get_each_to_each_adj_matrix(row, col):
+def get_each_to_each_adj_matrix(nodes_number):
     # Removing self loops
-    mask = (torch.eye(row, col) == 0)
-    adj = torch.ones(row,col) * mask
+    mask = (torch.eye(nodes_number, nodes_number) == 0)
+    adj = torch.ones(nodes_number, nodes_number) * mask
     edge_index = adj.nonzero().t()
     return edge_index
 
@@ -95,8 +95,7 @@ class GnnCapsuleLayer(nn.Module):
         #   - !sprawdz czy gnn sie uczy (czy jest backpropagation w warstwach przed gnn)
         
         # Kolejne kroki:
-        # - zrob macierz sasiedztwa kazdy z kazdym (zalozenie ze batch jest taki sam)
-        #   - usun self loops za pomocą torch.eye()
+        # - popraw rozmiar macierzy!! jest 36x36 a nie 6x6
         # - zrob macierz sasiedztwa tylko dla sasiadow
         # - upewnij sie ze to dobrze dziala z batchem
         # - optymalizacja liczenia macierzy (caching)
@@ -105,7 +104,8 @@ class GnnCapsuleLayer(nn.Module):
 
         # Pomocne linki
         # https://github.com/pyg-team/pytorch_geometric/issues/1511
-        edge_index = get_each_to_each_adj_matrix(6,6)
+        nodes_number = 36
+        edge_index = get_each_to_each_adj_matrix(nodes_number)
 
         # GNN
         x = self.gnn(x,edge_index)
