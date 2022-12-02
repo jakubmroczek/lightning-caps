@@ -56,6 +56,27 @@ class CapsuleLayer(nn.Module):
 
         return outputs
 
+def get_each_to_each_adj_matrix(row, col):
+    adj = torch.ones(row,col)
+    edge_index = adj.nonzero().t()
+    return edge_index
+
+    # num_graphs =1 
+    # n = 6
+    # adj=torch.randint(0, 1, (num_graphs, n, n)))
+    # offset, row, col = (batch.adj > 0).nonzero().t()
+    # edge_weight = adj[offset, row, col]
+    # row += offset * n
+    # col += offset * n
+    # edge_index = torch.stack([row, col], dim=0)
+    # x = x.view(num_graphs * n, num_feats)
+    # batch = torch.arange(0, num_graphs).view(-1, 1).repeat(1, n).view(-1)
+    # edge_index = torch.randint(0, 31, (2,10))
+    # edge_index=torch.eye(row,col,dtype=torch.long)
+    # edge_index = edge_index.to_sparse()
+
+    # return edge_index
+
 class GnnCapsuleLayer(nn.Module):
  
     def __init__(self):
@@ -69,16 +90,20 @@ class GnnCapsuleLayer(nn.Module):
         # Problemy techniczne:
         #   - jak pogodzic wymiary batcha z foramted edge_index
         #   - Wsparcie dla kilku warstw splotowych kapsułek, obecnie jest tylko 1
-        #   - sprawdz czy gnn sie uczy (czy jest backpropagation)
+        #   - !sprawdz czy gnn sie uczy (czy jest backpropagation w warstwach przed gnn)
         
         # Kolejne kroki:
         # - zrob macierz sasiedztwa kazdy z kazdym (zalozenie ze batch jest taki sam)
+        #   - usun self loops za pomocą torch.eye()
         # - zrob macierz sasiedztwa tylko dla sasiadow
         # - upewnij sie ze to dobrze dziala z batchem
+        # - optymalizacja liczenia macierzy (caching)
         # - wsparcie dla wiekszej ilosci warstw kapsulkowych
         # - eksperymetny na grid ai
-        
-        edge_index = torch.randint(0, 31, (2,10))
+
+        # Pomocne linki
+        # https://github.com/pyg-team/pytorch_geometric/issues/1511
+        edge_index = get_each_to_each_adj_matrix(6,6)
 
         # GNN
         x = self.gnn(x,edge_index)
