@@ -4,6 +4,8 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 import torch.nn.functional as F
+from torch_geometric.nn import SAGEConv
+
 
 NUM_ROUTING_ITERATIONS = 3
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -59,16 +61,21 @@ class GnnCapsuleLayer(nn.Module):
     def __init__(self, capsule_layer):
         super(GnnCapsuleLayer, self).__init__()
         self.capsule_layer = capsule_layer
+        self.gnn = SAGEConv(in_channels=-1, out_channels=8)
+        self.gnn = None
 
     def forward(self, x):
         # Oblicz kapsulki za pomoca domyslnego algorytmu
         x = self.capsule_layer(x)
 
         # Zrób graf z kazdej warstwy kapsulkowej
-
+    
         # GNN
+        # x = self.gnn(x)
 
         # Z powrotem do macierzy
+
+        # TODO: Problem pamietaj, ze musi byc backpropagation bledu do tylu
         return x
 
 
