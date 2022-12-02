@@ -56,6 +56,21 @@ class CapsuleLayer(nn.Module):
 
         return outputs
 
+def get_neighbout_adj_matrix(nodes_number):
+    adj = get_neighbout_adj_matrix(nodes_number)
+
+    # Calculating row and col pos based on node number
+    # row = int(floor(node_n / n))
+    # col = int(node_n % n)
+
+    # 2 loop search to generate the indices
+
+    # Now we know that the sum of distances between
+    #  cols and row indices for all the verties must be equal 1
+    # distance_function = lambda col1, row1, col2, row2: abs(col1 - col2) + abs(row1 - row2)
+    # neighbour_predicate = lambda 
+
+
 def get_each_to_each_adj_matrix(nodes_number):
     # Removing self loops
     mask = (torch.eye(nodes_number, nodes_number) == 0)
@@ -95,12 +110,12 @@ class GnnCapsuleLayer(nn.Module):
         #   - !sprawdz czy gnn sie uczy (czy jest backpropagation w warstwach przed gnn)
         
         # Kolejne kroki:
-        # - popraw rozmiar macierzy!! jest 36x36 a nie 6x6
         # - zrob macierz sasiedztwa tylko dla sasiadow
         # - upewnij sie ze to dobrze dziala z batchem
         # - optymalizacja liczenia macierzy (caching)
         # - wsparcie dla wiekszej ilosci warstw kapsulkowych
         # - eksperymetny na grid ai
+        # - rozwaz inne sieci gnn
 
         # Pomocne linki
         # https://github.com/pyg-team/pytorch_geometric/issues/1511
