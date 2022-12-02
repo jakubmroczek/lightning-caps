@@ -57,7 +57,9 @@ class CapsuleLayer(nn.Module):
         return outputs
 
 def get_each_to_each_adj_matrix(row, col):
-    adj = torch.ones(row,col)
+    # Removing self loops
+    mask = (torch.eye(row, col) == 0)
+    adj = torch.ones(row,col) * mask
     edge_index = adj.nonzero().t()
     return edge_index
 
