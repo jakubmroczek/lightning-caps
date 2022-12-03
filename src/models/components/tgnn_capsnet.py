@@ -1,5 +1,5 @@
 
-from math import floor
+from math import floor, sqrt
 import torch
 from torch import nn
 from torch.autograd import Variable
@@ -56,14 +56,38 @@ class CapsuleLayer(nn.Module):
 
         return outputs
 
-def get_neighbout_adj_matrix(nodes_number):
-    adj = get_neighbout_adj_matrix(nodes_number)
-
+def get_neighbour_adj_matrix(nodes_number):
     # Calculating row and col pos based on node number
-    # row = int(floor(node_n / n))
-    # col = int(node_n % n)
+    distance_function = lambda col1, row1, col2, row2: abs(col1 - col2) + abs(row1 - row2)
 
+    def node_distance(node_1, node_2, n):
+        '''n is matrix dimension'''
+        assert n == 6
+        row_1, col_1 = int(floor(node_1 / n)), int(node_1 % n)
+        row_2, col_2 = int(floor(node_2 / n)), int(node_2 % n)
+        return distance_function(col_1, row_1, col_2, row_2)
+
+    def are_neighbours(node_1, node_2, total_nodes_n):
+        n = int(sqrt(total_nodes_n))
+        assert n == 6
+        return node_distance(node_1, node_2, n) == 1
+
+    adj = get_each_to_each_adj_matrix(nodes_number)
+    
     # 2 loop search to generate the indices
+    # Lame function
+    indices = []
+    for node_1 in range(0, nodes_number):
+        for node_2 in range(0, nodes_number):
+            if are_neighbours(node_1, node_2, nodes_number):
+                indices.append([node_1, node_2])
+    indices = torch.IntTensor(indices)
+
+    all_edge_index = adj
+
+    
+
+    return adj
 
     # Now we know that the sum of distances between
     #  cols and row indices for all the verties must be equal 1
@@ -120,7 +144,7 @@ class GnnCapsuleLayer(nn.Module):
         # Pomocne linki
         # https://github.com/pyg-team/pytorch_geometric/issues/1511
         nodes_number = 36
-        edge_index = get_each_to_each_adj_matrix(nodes_number)
+        edge_index = get_neighbour_adj_matrix(nodes_number)
 
         # GNN
         x = self.gnn(x,edge_index)
