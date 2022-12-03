@@ -72,8 +72,6 @@ def get_neighbour_adj_matrix(nodes_number):
         assert n == 6
         return node_distance(node_1, node_2, n) == 1
 
-    adj = get_each_to_each_adj_matrix(nodes_number)
-    
     # 2 loop search to generate the indices
     # Lame function
     indices = []
@@ -94,22 +92,6 @@ def get_each_to_each_adj_matrix(nodes_number):
     edge_index = adj.nonzero().t()
     return edge_index
 
-    # num_graphs =1 
-    # n = 6
-    # adj=torch.randint(0, 1, (num_graphs, n, n)))
-    # offset, row, col = (batch.adj > 0).nonzero().t()
-    # edge_weight = adj[offset, row, col]
-    # row += offset * n
-    # col += offset * n
-    # edge_index = torch.stack([row, col], dim=0)
-    # x = x.view(num_graphs * n, num_feats)
-    # batch = torch.arange(0, num_graphs).view(-1, 1).repeat(1, n).view(-1)
-    # edge_index = torch.randint(0, 31, (2,10))
-    # edge_index=torch.eye(row,col,dtype=torch.long)
-    # edge_index = edge_index.to_sparse()
-
-    # return edge_index
-
 class GnnCapsuleLayer(nn.Module):
  
     def __init__(self):
@@ -126,12 +108,20 @@ class GnnCapsuleLayer(nn.Module):
         #   - !sprawdz czy gnn sie uczy (czy jest backpropagation w warstwach przed gnn)
         
         # Kolejne kroki:
-        # - zrob macierz sasiedztwa tylko dla sasiadow
         # - upewnij sie ze to dobrze dziala z batchem
+        # - zobacz czy propagacja wsteczna dziala dla conv1
         # - optymalizacja liczenia macierzy (caching)
         # - wsparcie dla wiekszej ilosci warstw kapsulkowych
         # - eksperymetny na grid ai
         # - rozwaz inne sieci gnn
+
+        # Obecnie batching nie działa
+        # In its most general form, the PyG DataLoader will automatically
+        #  increment the edge_index tensor by the cumulated number of
+        #  nodes of all graphs that got collated before the currently processed graph, 
+        # and will concatenate edge_index tensors (that are of shape [2, num_edges]) in the second dimension.
+        #  The same is true for face tensors, i.e., face indices in meshes. All other tensors will just get concatenated in
+        #  the first dimension without any further increasement of their values.
 
         # Pomocne linki
         # https://github.com/pyg-team/pytorch_geometric/issues/1511
