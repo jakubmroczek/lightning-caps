@@ -134,8 +134,18 @@ class GnnCapsuleLayer(nn.Module):
 
         stacked_vertices = x.view(-1, self.primary_caps_dimension)
 
+        stacked_edge_indices = torch.empty(size=(2,0))
+
+        for i in range(0, batch_size):
+            new_edge_index = edge_index.clone().detach()
+            offset = i * nodes_number
+            new_edge_index = new_edge_index.add(offset)
+            stacked_edge_indices = torch.cat((stacked_edge_indices, new_edge_index), dim=1)
+
         # GNN
-        x = self.gnn(x,edge_index)
+        x = self.gnn(stacked_vertices,stacked_edge_indices)
+
+        x = x.view(batch_size, nodes_number, self.primary_caps_dimension)
 
         return x
 
