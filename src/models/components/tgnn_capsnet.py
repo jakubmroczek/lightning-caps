@@ -81,19 +81,11 @@ def get_neighbour_adj_matrix(nodes_number):
         for node_2 in range(0, nodes_number):
             if are_neighbours(node_1, node_2, nodes_number):
                 indices.append([node_1, node_2])
-    indices = torch.IntTensor(indices)
+    indices = torch.LongTensor(indices)
 
-    all_edge_index = adj
-
-    
+    adj = indices.t()
 
     return adj
-
-    # Now we know that the sum of distances between
-    #  cols and row indices for all the verties must be equal 1
-    # distance_function = lambda col1, row1, col2, row2: abs(col1 - col2) + abs(row1 - row2)
-    # neighbour_predicate = lambda 
-
 
 def get_each_to_each_adj_matrix(nodes_number):
     # Removing self loops
