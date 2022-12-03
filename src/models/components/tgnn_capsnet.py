@@ -96,7 +96,8 @@ class GnnCapsuleLayer(nn.Module):
  
     def __init__(self):
         super(GnnCapsuleLayer, self).__init__()
-        self.gnn = SAGEConv(in_channels=8, out_channels=8)
+        self.primary_caps_dimension = 8
+        self.gnn = SAGEConv(in_channels=self.primary_caps_dimension, out_channels=self.primary_caps_dimension)
         
     def forward(self, x):
         # x to kapsulki z warstwy primary caps
@@ -126,7 +127,12 @@ class GnnCapsuleLayer(nn.Module):
         # Pomocne linki
         # https://github.com/pyg-team/pytorch_geometric/issues/1511
         nodes_number = 36
+        
         edge_index = get_neighbour_adj_matrix(nodes_number)
+
+        batch_size = x.shape[0]
+
+        stacked_vertices = x.view(-1, self.primary_caps_dimension)
 
         # GNN
         x = self.gnn(x,edge_index)
