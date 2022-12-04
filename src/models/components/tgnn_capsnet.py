@@ -116,10 +116,6 @@ class GnnCapsuleLayer(nn.Module):
     def forward(self, x):
         # x to kapsulki z warstwy primary caps
 
-        # Zrób graf z kazdej warstwy kapsulkowej
-        # Problemy techniczne:
-        #   - Wsparcie dla kilku warstw splotowych kapsułek, obecnie jest tylko 1
-        
         # Kolejne kroki:
         # - wsparcie dla wiekszej ilosci warstw kapsulkowych
         # - eksperymetny na grid ai
