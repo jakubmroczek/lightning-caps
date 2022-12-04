@@ -92,11 +92,25 @@ def get_each_to_each_adj_matrix(nodes_number):
     edge_index = adj.nonzero().t()
     return edge_index
 
+def collate(batch_size, edge_index, nodes_number):
+    stacked_edge_indices = torch.empty(size=(2,0), dtype=torch.long)
+
+    for i in range(0, batch_size):
+        new_edge_index = edge_index.clone().detach()
+        offset = i * nodes_number
+        new_edge_index = new_edge_index.add(offset)
+        stacked_edge_indices = torch.cat((stacked_edge_indices, new_edge_index), dim=1)
+
+    return stacked_edge_indices
+
+
 class GnnCapsuleLayer(nn.Module):
- 
-    def __init__(self):
+    def __init__(self, primary_caps_filter_dimenesion = 36):
         super(GnnCapsuleLayer, self).__init__()
         self.primary_caps_dimension = 8
+        self.primary_caps_filter_dimenesion = primary_caps_filter_dimenesion
+        assert self.primary_caps_filter_dimenesion == 36
+        self.edge_index = get_neighbour_adj_matrix(self.primary_caps_filter_dimenesion)
         self.gnn = SAGEConv(in_channels=self.primary_caps_dimension, out_channels=self.primary_caps_dimension)
         
     def forward(self, x):
@@ -107,7 +121,6 @@ class GnnCapsuleLayer(nn.Module):
         #   - Wsparcie dla kilku warstw splotowych kapsułek, obecnie jest tylko 1
         
         # Kolejne kroki:
-        # - optymalizacja liczenia macierzy (caching)
         # - wsparcie dla wiekszej ilosci warstw kapsulkowych
         # - eksperymetny na grid ai
         # - rozwaz inne sieci gnn
@@ -121,27 +134,17 @@ class GnnCapsuleLayer(nn.Module):
         #  the first dimension without any further increasement of their values.
 
         # Pomocne linki
-        # https://github.com/pyg-team/pytorch_geometric/issues/1511
-        nodes_number = 36
-        
-        edge_index = get_neighbour_adj_matrix(nodes_number)
-
+        # https://github.com/pyg-team/pytorch_geometric/issues/1511 
         batch_size = x.shape[0]
-
+        
+        # collate the inputs 
         stacked_vertices = x.view(-1, self.primary_caps_dimension)
-
-        stacked_edge_indices = torch.empty(size=(2,0), dtype=torch.long)
-
-        for i in range(0, batch_size):
-            new_edge_index = edge_index.clone().detach()
-            offset = i * nodes_number
-            new_edge_index = new_edge_index.add(offset)
-            stacked_edge_indices = torch.cat((stacked_edge_indices, new_edge_index), dim=1)
+        stacked_edge_indices = collate(batch_size, self.edge_index, self.primary_caps_filter_dimenesion)
 
         # GNN
         x = self.gnn(stacked_vertices,stacked_edge_indices)
 
-        x = x.view(batch_size, nodes_number, self.primary_caps_dimension)
+        x = x.view(batch_size, self.primary_caps_filter_dimenesion, self.primary_caps_dimension)
 
         return x
 
@@ -169,7 +172,8 @@ class TgnnCapsNet(nn.Module):
         self.primary_capsules = CapsuleLayer(num_capsules=first_capsule_layer_dimension, num_route_nodes=-1, in_channels=256, out_channels=first_capusle_layer_convolution_layer_numbers,
                                              kernel_size=primary_caps_kernel_size, stride=primary_caps_stride)
         
-        self.gnn_capsule_layer = GnnCapsuleLayer()
+        self.primary_caps_node_number = 36
+        self.gnn_capsule_layer = GnnCapsuleLayer(self.primary_caps_node_number)
 
         conv1_feature_map_dimension = floor( (input_image_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
         primary_caps_feature_map_dimension = floor( (conv1_feature_map_dimension - primary_caps_kernel_size + primary_caps_stride ) / primary_caps_stride )
