@@ -104,12 +104,10 @@ class GnnCapsuleLayer(nn.Module):
 
         # Zrób graf z kazdej warstwy kapsulkowej
         # Problemy techniczne:
-        #   - jak pogodzic wymiary batcha z foramted edge_index
         #   - Wsparcie dla kilku warstw splotowych kapsułek, obecnie jest tylko 1
         #   - !sprawdz czy gnn sie uczy (czy jest backpropagation w warstwach przed gnn)
         
         # Kolejne kroki:
-        # - upewnij sie ze to dobrze dziala z batchem
         # - zobacz czy propagacja wsteczna dziala dla conv1
         # - optymalizacja liczenia macierzy (caching)
         # - wsparcie dla wiekszej ilosci warstw kapsulkowych
