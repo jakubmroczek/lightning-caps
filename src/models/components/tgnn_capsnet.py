@@ -94,12 +94,12 @@ def get_each_to_each_adj_matrix(nodes_number):
 
 def collate(batch_size, edge_index, nodes_per_layer, primary_caps_layers_number):
     stacked_edge_indices = torch.empty(size=(2,0), dtype=torch.long)
+    offset = 0
     for i in range(0, batch_size):
-        offset = 0
         for j in range(0, primary_caps_layers_number):
             new_edge_index = edge_index.clone().detach()
-            offset += j * nodes_per_layer
             new_edge_index = new_edge_index.add(offset)
+            offset += nodes_per_layer
             stacked_edge_indices = torch.cat((stacked_edge_indices, new_edge_index), dim=1)
     return stacked_edge_indices
 
@@ -118,8 +118,6 @@ class GnnCapsuleLayer(nn.Module):
         # x to kapsulki z warstwy primary caps
 
         # Kolejne kroki:
-        # - wsparcie dla wiekszej ilosci warstw kapsulkowych
-        #   - wydaje mi sie ze nie jest edge_index generowany prawidlowo prz n == 32, sprawdz
         # - oblicz edge_index raz
         # - eksperymetny na grid ai
         # - rozwaz inne sieci gnn
