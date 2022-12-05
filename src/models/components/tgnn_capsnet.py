@@ -92,25 +92,26 @@ def get_each_to_each_adj_matrix(nodes_number):
     edge_index = adj.nonzero().t()
     return edge_index
 
-def collate(batch_size, edge_index, nodes_number):
+def collate(batch_size, edge_index, nodes_per_layer, primary_caps_layers_number):
     stacked_edge_indices = torch.empty(size=(2,0), dtype=torch.long)
-
     for i in range(0, batch_size):
-        new_edge_index = edge_index.clone().detach()
-        offset = i * nodes_number
-        new_edge_index = new_edge_index.add(offset)
-        stacked_edge_indices = torch.cat((stacked_edge_indices, new_edge_index), dim=1)
-
+        offset = 0
+        for j in range(0, primary_caps_layers_number):
+            new_edge_index = edge_index.clone().detach()
+            offset += j * nodes_per_layer
+            new_edge_index = new_edge_index.add(offset)
+            stacked_edge_indices = torch.cat((stacked_edge_indices, new_edge_index), dim=1)
     return stacked_edge_indices
 
-
 class GnnCapsuleLayer(nn.Module):
-    def __init__(self, primary_caps_filter_dimenesion = 36):
+    def __init__(self, primary_caps_filter_dimenesion = 36, primary_caps_layers_number = 1):
         super(GnnCapsuleLayer, self).__init__()
         self.primary_caps_dimension = 8
-        self.primary_caps_filter_dimenesion = primary_caps_filter_dimenesion
-        assert self.primary_caps_filter_dimenesion == 36
-        self.edge_index = get_neighbour_adj_matrix(self.primary_caps_filter_dimenesion)
+        self.nodes_per_layer = primary_caps_filter_dimenesion
+        self.primary_caps_layers_number = primary_caps_layers_number
+        self.primary_caps_number = self.nodes_per_layer * self.primary_caps_layers_number
+        assert self.nodes_per_layer == 36
+        self.edge_index = get_neighbour_adj_matrix(self.nodes_per_layer)
         self.gnn = SAGEConv(in_channels=self.primary_caps_dimension, out_channels=self.primary_caps_dimension)
         
     def forward(self, x):
@@ -118,6 +119,8 @@ class GnnCapsuleLayer(nn.Module):
 
         # Kolejne kroki:
         # - wsparcie dla wiekszej ilosci warstw kapsulkowych
+        #   - wydaje mi sie ze nie jest edge_index generowany prawidlowo prz n == 32, sprawdz
+        # - oblicz edge_index raz
         # - eksperymetny na grid ai
         # - rozwaz inne sieci gnn
 
@@ -135,12 +138,12 @@ class GnnCapsuleLayer(nn.Module):
         
         # collate the inputs 
         stacked_vertices = x.view(-1, self.primary_caps_dimension)
-        stacked_edge_indices = collate(batch_size, self.edge_index, self.primary_caps_filter_dimenesion)
+        stacked_edge_indices = collate(batch_size, self.edge_index, self.nodes_per_layer, self.primary_caps_layers_number)
 
         # GNN
         x = self.gnn(stacked_vertices,stacked_edge_indices)
 
-        x = x.view(batch_size, self.primary_caps_filter_dimenesion, self.primary_caps_dimension)
+        x = x.view(batch_size, self.primary_caps_number, self.primary_caps_dimension)
 
         return x
 
@@ -169,7 +172,7 @@ class TgnnCapsNet(nn.Module):
                                              kernel_size=primary_caps_kernel_size, stride=primary_caps_stride)
         
         self.primary_caps_node_number = 36
-        self.gnn_capsule_layer = GnnCapsuleLayer(self.primary_caps_node_number)
+        self.gnn_capsule_layer = GnnCapsuleLayer(self.primary_caps_node_number, first_capusle_layer_convolution_layer_numbers)
 
         conv1_feature_map_dimension = floor( (input_image_dimension - conv1_kernel_size + conv1_stride ) / conv1_stride )
         primary_caps_feature_map_dimension = floor( (conv1_feature_map_dimension - primary_caps_kernel_size + primary_caps_stride ) / primary_caps_stride )
