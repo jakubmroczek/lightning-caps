@@ -16,7 +16,7 @@ scheduler:
 net:
   _target_: src.models.components.tgnn_capsnet.TgnnCapsNet
   first_capsule_layer_dimension: 8
-  first_capusle_layer_convolution_layer_numbers: 32
+  first_capusle_layer_convolution_layer_numbers: 1
   output_capsules_dimension: 16
   conv1_kernel_size: 9
   conv1_stride: 1
